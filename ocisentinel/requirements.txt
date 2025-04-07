@@ -1,0 +1,4 @@
+azure-functions==1.8.0
+oci==2.43.2
+requests==2.31.0
+cffi
