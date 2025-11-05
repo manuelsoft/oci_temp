@@ -47,10 +47,26 @@ def main(mytimer: func.TimerRequest):
 
     stream_client = oci.streaming.StreamClient(config, service_endpoint=MessageEndpoint)
 
-    if CURSOR_TYPE.lower() == 'group' :
-        cursor = get_cursor_by_group(stream_client, StreamOcid, "group1", "group1-instance1")
-    else :
-        cursor = get_cursor_by_partition(stream_client, StreamOcid, partition=PARTITIONS)
+if CURSOR_TYPE.lower() == 'group':
+    cursor_response = stream_client.create_group_cursor(
+        StreamOcid,
+        oci.streaming.models.CreateGroupCursorDetails(
+            group_name="group1",
+            instance_name="group1-instance1",
+            type="LATEST",  # o TRIM_HORIZON si quieres desde el inicio
+            commit_on_get=True
+        )
+    )
+    cursor = cursor_response.data.value
+else:
+    cursor_response = stream_client.create_cursor(
+        StreamOcid,
+        oci.streaming.models.CreateCursorDetails(
+            partition=PARTITIONS,
+            type="LATEST"  # o TRIM_HORIZON
+        )
+    )
+    cursor = cursor_response.data.value
     
     process_events(stream_client, StreamOcid, cursor, limit, sentinel_connector, start_ts)
     logging.info(f'Function finished. Sent events {sentinel_connector.successfull_sent_events_number}.')
